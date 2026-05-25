@@ -12,16 +12,17 @@ public static class HelpText
         Usage:
           xaml-styler-mcp
           xaml-styler-mcp help
-          xaml-styler-mcp mcp-install --provider codex|claude|copilot|gemini [--name xaml-styler]
+          xaml-styler-mcp mcp-install --provider codex|claude|copilot|gemini|all [--name xaml-styler]
           xaml-styler-mcp mcp-install --config <mcp.json> [--name xaml-styler]
-          xaml-styler-mcp mcp-remove --provider codex|claude|copilot|gemini [--name xaml-styler]
-          xaml-styler-mcp mcp-uninstall --provider codex|claude|copilot|gemini [--name xaml-styler]
+          xaml-styler-mcp mcp-remove --provider codex|claude|copilot|gemini|all [--name xaml-styler]
+          xaml-styler-mcp mcp-uninstall --provider codex|claude|copilot|gemini|all [--name xaml-styler]
 
         Providers:
           codex    Uses: codex mcp add/remove
           claude   Uses: claude mcp add/remove
           copilot  Uses: copilot mcp add/remove
           gemini   Uses: gemini mcp add/remove
+          all      Runs every supported provider CLI and prints a result summary
 
         Options:
           --provider <name>  Install or remove through a supported provider CLI.
@@ -30,6 +31,7 @@ public static class HelpText
 
         Examples:
           xaml-styler-mcp mcp-install --provider codex
+          xaml-styler-mcp mcp-install --provider all
           xaml-styler-mcp mcp-install --config C:\path\to\mcp.json --name xaml-styler
           xaml-styler-mcp mcp-remove --provider claude
         """;

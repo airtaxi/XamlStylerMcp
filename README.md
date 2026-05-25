@@ -38,6 +38,7 @@ xaml-styler-mcp mcp-install --provider codex
 xaml-styler-mcp mcp-install --provider claude
 xaml-styler-mcp mcp-install --provider copilot
 xaml-styler-mcp mcp-install --provider gemini
+xaml-styler-mcp mcp-install --provider all
 ```
 
 Remove the registration:
@@ -45,6 +46,7 @@ Remove the registration:
 ```powershell
 xaml-styler-mcp mcp-remove --provider codex
 xaml-styler-mcp mcp-uninstall --provider claude
+xaml-styler-mcp mcp-remove --provider all
 ```
 
 The default MCP server name is `xaml-styler`. Override it when needed:

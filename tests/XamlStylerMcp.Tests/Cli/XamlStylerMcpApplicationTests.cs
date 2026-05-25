@@ -29,6 +29,38 @@ public sealed class XamlStylerMcpApplicationTests
     }
 
     [Fact]
+    public async Task InstallAllProviders_RunsEveryProviderCommand()
+    {
+        var runner = new RecordingProviderCommandRunner();
+        var outputWriter = new StringWriter();
+
+        var exitCode = await XamlStylerMcpApplication.RunAsync(["mcp-install", "--provider", "all"], runner, outputWriter, new StringWriter(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exitCode);
+        Assert.Collection(runner.Commands, command => Assert.Equal("codex", command.FileName), command => Assert.Equal("claude", command.FileName), command => Assert.Equal("copilot", command.FileName), command => Assert.Equal("gemini", command.FileName));
+        Assert.Contains("Provider results:", outputWriter.ToString(), StringComparison.Ordinal);
+        Assert.Contains("gemini: success", outputWriter.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RemoveAllProviders_RunsEveryProviderCommandAndReturnsFailureWhenAnyCommandFails()
+    {
+        var runner = new RecordingProviderCommandRunner();
+        runner.ExitCodes.Enqueue(0);
+        runner.ExitCodes.Enqueue(127);
+        runner.ExitCodes.Enqueue(0);
+        runner.ExitCodes.Enqueue(0);
+        var outputWriter = new StringWriter();
+
+        var exitCode = await XamlStylerMcpApplication.RunAsync(["mcp-remove", "--provider", "all"], runner, outputWriter, new StringWriter(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exitCode);
+        Assert.Equal(4, runner.Commands.Count);
+        Assert.All(runner.Commands, command => Assert.Equal("remove", command.Arguments[1]));
+        Assert.Contains("claude: failed with exit code 127", outputWriter.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task InstallConfig_EditsMcpJson()
     {
         using var temporaryDirectory = new TemporaryDirectory();

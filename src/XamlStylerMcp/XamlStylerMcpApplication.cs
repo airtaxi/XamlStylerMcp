@@ -11,6 +11,8 @@ namespace XamlStylerMcp;
 
 public static class XamlStylerMcpApplication
 {
+    private static readonly McpProvider[] s_supportedProviders = Enum.GetValues<McpProvider>();
+
     public static async Task<int> RunAsync(string[] args, IProviderCommandRunner? providerCommandRunner = null, TextWriter? outputWriter = null, TextWriter? errorWriter = null, CancellationToken cancellationToken = default)
     {
         outputWriter ??= Console.Out;
@@ -50,7 +52,7 @@ public static class XamlStylerMcpApplication
     {
         var providerOption = new Option<string?>("--provider")
         {
-            Description = "Provider CLI to use: codex, claude, copilot, or gemini.",
+            Description = "Provider CLI to use: codex, claude, copilot, gemini, or all.",
         };
 
         var configOption = new Option<string?>("--config")
@@ -92,21 +94,61 @@ public static class XamlStylerMcpApplication
 
         if (hasProvider)
         {
+            if (IsAllProviders(providerValue)) return await ExecuteAllProviderCommandsAsync(isInstall, serverName, providerCommandRunner, outputWriter, cancellationToken);
+
             if (!TryParseProvider(providerValue, out var provider))
             {
-                errorWriter.WriteLine($"Unsupported provider '{providerValue}'. Supported providers: codex, claude, copilot, gemini.");
+                errorWriter.WriteLine($"Unsupported provider '{providerValue}'. Supported providers: codex, claude, copilot, gemini, all.");
                 return 2;
             }
 
-            var providerCommand = isInstall ? ProviderCommandBuilder.CreateInstallCommand(provider, serverName, XamlStylerMcpConstants.ToolCommandName) : ProviderCommandBuilder.CreateRemoveCommand(provider, serverName);
-            outputWriter.WriteLine($"Running: {FormatProviderCommand(providerCommand)}");
-            return await providerCommandRunner.RunAsync(providerCommand, cancellationToken);
+            return await ExecuteProviderCommandAsync(isInstall, provider, serverName, providerCommandRunner, outputWriter, cancellationToken);
         }
 
         var configurationManager = new McpJsonConfigurationManager();
         var changed = isInstall ? configurationManager.Install(configPath!, serverName, XamlStylerMcpConstants.ToolCommandName) : configurationManager.Remove(configPath!, serverName);
         outputWriter.WriteLine(changed ? $"{(isInstall ? "Installed" : "Removed")} '{serverName}' in {Path.GetFullPath(configPath!)}." : $"No changes were needed for '{serverName}' in {Path.GetFullPath(configPath!)}.");
         return 0;
+    }
+
+    private static async Task<int> ExecuteAllProviderCommandsAsync(bool isInstall, string serverName, IProviderCommandRunner providerCommandRunner, TextWriter outputWriter, CancellationToken cancellationToken)
+    {
+        var results = new List<ProviderCommandResult>();
+
+        foreach (var provider in s_supportedProviders)
+        {
+            var exitCode = await ExecuteProviderCommandAsync(isInstall, provider, serverName, providerCommandRunner, outputWriter, cancellationToken);
+            results.Add(new ProviderCommandResult(provider, exitCode));
+        }
+
+        outputWriter.WriteLine("Provider results:");
+
+        var hasFailure = false;
+        foreach (var result in results)
+        {
+            if (result.ExitCode == 0)
+            {
+                outputWriter.WriteLine($"  {FormatProviderName(result.Provider)}: success");
+                continue;
+            }
+
+            hasFailure = true;
+            outputWriter.WriteLine($"  {FormatProviderName(result.Provider)}: failed with exit code {result.ExitCode}");
+        }
+
+        return hasFailure ? 1 : 0;
+    }
+
+    private static async Task<int> ExecuteProviderCommandAsync(bool isInstall, McpProvider provider, string serverName, IProviderCommandRunner providerCommandRunner, TextWriter outputWriter, CancellationToken cancellationToken)
+    {
+        var providerCommand = isInstall ? ProviderCommandBuilder.CreateInstallCommand(provider, serverName, XamlStylerMcpConstants.ToolCommandName) : ProviderCommandBuilder.CreateRemoveCommand(provider, serverName);
+        outputWriter.WriteLine($"Running: {FormatProviderCommand(providerCommand)}");
+        return await providerCommandRunner.RunAsync(providerCommand, cancellationToken);
+    }
+
+    private static bool IsAllProviders(string? value)
+    {
+        return string.Equals(value?.Trim(), "all", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryParseProvider(string? value, out McpProvider provider)
@@ -138,6 +180,11 @@ public static class XamlStylerMcpApplication
         return string.Join(" ", [command.FileName, .. command.Arguments.Select(QuoteArgument)]);
     }
 
+    private static string FormatProviderName(McpProvider provider)
+    {
+        return provider.ToString().ToLowerInvariant();
+    }
+
     private static string QuoteArgument(string argument)
     {
         return argument.Contains(' ', StringComparison.Ordinal) ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : argument;
@@ -155,4 +202,6 @@ public static class XamlStylerMcpApplication
         await builder.Build().RunAsync(cancellationToken);
         return 0;
     }
+
+    private sealed record ProviderCommandResult(McpProvider Provider, int ExitCode);
 }

@@ -38,6 +38,7 @@ xaml-styler-mcp mcp-install --provider codex
 xaml-styler-mcp mcp-install --provider claude
 xaml-styler-mcp mcp-install --provider copilot
 xaml-styler-mcp mcp-install --provider gemini
+xaml-styler-mcp mcp-install --provider all
 ```
 
 등록을 제거하려면 다음을 실행합니다.
@@ -45,6 +46,7 @@ xaml-styler-mcp mcp-install --provider gemini
 ```powershell
 xaml-styler-mcp mcp-remove --provider codex
 xaml-styler-mcp mcp-uninstall --provider claude
+xaml-styler-mcp mcp-remove --provider all
 ```
 
 기본 MCP 서버 이름은 `xaml-styler`입니다. 필요하면 이름을 지정할 수 있습니다.
