@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>xaml-styler-mcp</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Howon Lee</Authors>
     <Title>XAML Styler MCP</Title>
     <Description>MCP server and provider installer for formatting XAML through XamlStyler.</Description>
