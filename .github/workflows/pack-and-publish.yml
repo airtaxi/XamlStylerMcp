@@ -1,49 +1,138 @@
-name: Pack and Publish
+name: Pack and Publish NuGet
 
 on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the current package to NuGet.org.
+        required: true
+        default: false
+        type: boolean
   push:
     branches:
       - master
-    tags:
-      - v*
-  pull_request:
-    branches:
-      - master
-  workflow_dispatch:
+    paths:
+      - src/XamlStylerMcp/XamlStylerMcp.csproj
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xaml-styler-mcp-pack-and-publish
+  cancel-in-progress: false
 
 jobs:
-  pack:
-    runs-on: windows-latest
-
+  pack-and-publish:
+    name: Pack and Publish NuGet
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: true
 
+      - name: Resolve publish mode
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $projectPath = "src/XamlStylerMcp/XamlStylerMcp.csproj"
+          [xml]$currentProject = Get-Content -LiteralPath $projectPath -Raw
+          $currentVersion = ($currentProject.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          if ([string]::IsNullOrWhiteSpace($currentVersion)) { throw "Current Version was not found in $projectPath." }
+
+          $eventName = "${{ github.event_name }}"
+          if ($eventName -eq "workflow_dispatch") {
+            $shouldPublish = "${{ inputs.publish }}" -eq "true"
+            "run=true" >> $env:GITHUB_OUTPUT
+            "publish=$($shouldPublish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+            "current=$currentVersion" >> $env:GITHUB_OUTPUT
+            "previous=" >> $env:GITHUB_OUTPUT
+
+            if ($shouldPublish) {
+              "Manual run requested NuGet publishing for version $currentVersion."
+            }
+            else {
+              "Manual run will test and pack version $currentVersion without publishing."
+            }
+
+            exit 0
+          }
+
+          $previousCommit = "${{ github.event.before }}"
+          if ([string]::IsNullOrWhiteSpace($previousCommit) -or $previousCommit -match "^0+$") {
+            "run=false" >> $env:GITHUB_OUTPUT
+            "publish=false" >> $env:GITHUB_OUTPUT
+            "current=$currentVersion" >> $env:GITHUB_OUTPUT
+            "previous=" >> $env:GITHUB_OUTPUT
+            "No previous commit was available, so NuGet publishing is skipped."
+            exit 0
+          }
+
+          $previousProjectText = & git show "$previousCommit`:$projectPath"
+          if ($LASTEXITCODE -ne 0) { throw "Previous project file was not found at $previousCommit`:$projectPath." }
+
+          [xml]$previousProject = $previousProjectText -join "`n"
+          $previousVersion = ($previousProject.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          if ([string]::IsNullOrWhiteSpace($previousVersion)) { throw "Previous Version was not found in $projectPath." }
+
+          $currentSemanticVersion = [System.Management.Automation.SemanticVersion]::Parse($currentVersion)
+          $previousSemanticVersion = [System.Management.Automation.SemanticVersion]::Parse($previousVersion)
+          $shouldPublish = $currentSemanticVersion -gt $previousSemanticVersion
+
+          "run=$($shouldPublish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "publish=$($shouldPublish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "current=$currentVersion" >> $env:GITHUB_OUTPUT
+          "previous=$previousVersion" >> $env:GITHUB_OUTPUT
+
+          if ($shouldPublish) {
+            "Version increased from $previousVersion to $currentVersion. NuGet publishing will continue."
+          }
+          else {
+            "Version did not increase. Previous=$previousVersion Current=$currentVersion. NuGet publishing is skipped."
+          }
+
       - name: Setup .NET
+        if: steps.version.outputs.run == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
       - name: Test
-        run: dotnet test --configuration Release --no-build
+        if: steps.version.outputs.run == 'true'
+        run: dotnet test XamlStylerMcp.slnx -c Release
 
       - name: Pack
-        run: dotnet pack src/XamlStylerMcp/XamlStylerMcp.csproj --configuration Release --no-build --output artifacts
+        if: steps.version.outputs.run == 'true'
+        run: dotnet pack src/XamlStylerMcp/XamlStylerMcp.csproj -c Release /p:ContinuousIntegrationBuild=true --output artifacts/packages
 
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-package
-          path: artifacts/*.nupkg
+      - name: Validate package
+        if: steps.version.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_path="artifacts/packages/xaml-styler-mcp.${{ steps.version.outputs.current }}.nupkg"
+          if [ ! -f "$package_path" ]; then
+            echo "Missing expected package: $package_path" >&2
+            exit 1
+          fi
 
-      - name: Publish to NuGet
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Publish package to NuGet.org
+        if: steps.version.outputs.publish == 'true'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${NUGET_API_KEY:-}" ]; then
+            echo "NUGET_API_KEY secret is not configured." >&2
+            exit 1
+          fi
+
+          dotnet nuget push "artifacts/packages/xaml-styler-mcp.${{ steps.version.outputs.current }}.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
