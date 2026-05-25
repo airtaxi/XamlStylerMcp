@@ -82,7 +82,9 @@ xaml-styler-mcp mcp-install --config "C:\path\to\mcp.json"
 
 - `format_xaml`: XAML 문자열을 포매팅해 결과 문자열을 반환합니다.
 - `format_xaml_file`: `.xaml` 또는 `.axaml` 파일을 포매팅하고 기본적으로 파일에 씁니다.
+- `format_xaml_directory`: 디렉터리의 `.xaml` 및 `.axaml` 파일을 포매팅합니다. 하위 디렉터리를 포함하려면 `recursive`를 설정합니다.
 - `check_xaml_file`: `.xaml` 또는 `.axaml` 파일에 포매팅 변경이 필요한지 확인합니다.
+- `check_xaml_directory`: 디렉터리의 `.xaml` 및 `.axaml` 파일에 포매팅 변경이 필요한지 확인합니다. 하위 디렉터리를 포함하려면 `recursive`를 설정합니다.
 
 각 도구는 선택적으로 XamlStyler 설정 파일 경로인 `configPath`를 받을 수 있습니다. 파일 기반 도구는 `configPath`가 없으면 상위 디렉터리에서 `Settings.XamlStyler`를 찾습니다.
 
