@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/externals/" />
+  <Folder Name="/externals/XamlStyler/" />
+  <Folder Name="/externals/XamlStyler/src/">
+    <Project Path="externals/XamlStyler/src/XamlStyler/XamlStyler.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/XamlStylerMcp/XamlStylerMcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/XamlStylerMcp.Tests/XamlStylerMcp.Tests.csproj" />
+  </Folder>
+</Solution>

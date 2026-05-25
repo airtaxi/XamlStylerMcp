@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>xaml-styler-mcp</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Howon Lee</Authors>
+    <Title>XAML Styler MCP</Title>
+    <Description>MCP server and provider installer for formatting XAML through XamlStyler.</Description>
+    <PackageTags>xaml;xaml-styler;formatter;mcp;model-context-protocol</PackageTags>
+    <PackageProjectUrl>https://github.com/airtaxi/XamlStylerMcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/airtaxi/XamlStylerMcp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>xaml-styler-mcp</ToolCommandName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageReference Include="ModelContextProtocol" Version="1.3.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\externals\XamlStyler\src\XamlStyler\XamlStyler.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.ko.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" />
+    <None Include="..\..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\licenses\XamlStyler-Apache-2.0.txt" Pack="true" PackagePath="licenses\" />
+  </ItemGroup>
+
+</Project>
