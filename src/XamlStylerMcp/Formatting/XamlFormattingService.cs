@@ -29,7 +29,7 @@ public sealed class XamlFormattingService
 
         if (writeChanges && changed) File.WriteAllText(fullPath, formattedContent, encoding);
 
-        return new XamlFileFormatResult(fullPath, changed, writeChanges && changed, formattedContent);
+        return new XamlFileFormatResult(fullPath, changed, writeChanges && changed);
     }
 
     public XamlFileCheckResult CheckFile(string filePath, string? configPath = null)
