@@ -82,9 +82,9 @@ The config editor accepts JSON comments and trailing commas when reading. It wri
 
 - `format_xaml`: Formats a XAML string and returns the formatted content.
 - `format_xaml_file`: Formats a `.xaml` or `.axaml` file and writes changes by default.
-- `format_xaml_directory`: Formats `.xaml` and `.axaml` files in a directory. Set `recursive` to include subdirectories.
+- `format_xaml_directory`: Formats `.xaml` and `.axaml` files in a directory. Set `recursive` to include subdirectories, excluding `bin` and `obj` folders.
 - `check_xaml_file`: Checks whether a `.xaml` or `.axaml` file would change.
-- `check_xaml_directory`: Checks whether `.xaml` and `.axaml` files in a directory would change. Set `recursive` to include subdirectories.
+- `check_xaml_directory`: Checks whether `.xaml` and `.axaml` files in a directory would change. Set `recursive` to include subdirectories, excluding `bin` and `obj` folders.
 
 Each tool accepts an optional `configPath` pointing to a XamlStyler settings file. File-based tools search parent directories for `Settings.XamlStyler` when `configPath` is omitted.
 
