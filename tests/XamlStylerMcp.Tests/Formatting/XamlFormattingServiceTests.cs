@@ -80,6 +80,34 @@ public sealed class XamlFormattingServiceTests
     }
 
     [Fact]
+    public void CheckDirectory_WhenRecursiveExcludesBinAndObjDirectories()
+    {
+        using var temporaryDirectory = new TemporaryDirectory();
+        var binDirectoryPath = Path.Combine(temporaryDirectory.Path, "bin");
+        var objDirectoryPath = Path.Combine(temporaryDirectory.Path, "obj");
+        var nestedDirectoryPath = Path.Combine(temporaryDirectory.Path, "Nested");
+        Directory.CreateDirectory(binDirectoryPath);
+        Directory.CreateDirectory(objDirectoryPath);
+        Directory.CreateDirectory(nestedDirectoryPath);
+        var input = "<Grid xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\"><Button Height=\"20\" Width=\"10\"></Button></Grid>";
+        var xamlPath = Path.Combine(temporaryDirectory.Path, "Sample.xaml");
+        var binXamlPath = Path.Combine(binDirectoryPath, "Generated.xaml");
+        var objXamlPath = Path.Combine(objDirectoryPath, "Generated.xaml");
+        var nestedXamlPath = Path.Combine(nestedDirectoryPath, "Page.xaml");
+        File.WriteAllText(xamlPath, input);
+        File.WriteAllText(binXamlPath, input);
+        File.WriteAllText(objXamlPath, input);
+        File.WriteAllText(nestedXamlPath, input);
+
+        var result = new XamlFormattingService().CheckDirectory(temporaryDirectory.Path, recursive: true);
+
+        Assert.Equal(2, result.FileCount);
+        Assert.Equal([Path.GetFullPath(nestedXamlPath), Path.GetFullPath(xamlPath)], result.Files.Select(file => file.FilePath));
+        Assert.Equal(input, File.ReadAllText(binXamlPath));
+        Assert.Equal(input, File.ReadAllText(objXamlPath));
+    }
+
+    [Fact]
     public void FormatFile_RejectsUnsupportedExtension()
     {
         using var temporaryDirectory = new TemporaryDirectory();

@@ -8,6 +8,8 @@ public sealed class XamlFormattingService
 {
     private static readonly string[] s_supportedExtensions = [".xaml", ".axaml"];
 
+    private static readonly HashSet<string> s_excludedDirectories = new(StringComparer.OrdinalIgnoreCase) { "bin", "obj" };
+
     public string FormatXaml(string content, string? configPath = null)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -108,11 +110,24 @@ public sealed class XamlFormattingService
 
     private static IEnumerable<string> EnumerateSupportedFiles(string fullDirectoryPath, bool recursive)
     {
-        var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        return s_supportedExtensions
-            .SelectMany(extension => Directory.EnumerateFiles(fullDirectoryPath, $"*{extension}", searchOption))
+        return EnumerateSupportedFilesCore(fullDirectoryPath, recursive)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> EnumerateSupportedFilesCore(string fullDirectoryPath, bool recursive)
+    {
+        foreach (var filePath in s_supportedExtensions.SelectMany(extension => Directory.EnumerateFiles(fullDirectoryPath, $"*{extension}", SearchOption.TopDirectoryOnly))) yield return filePath;
+
+        if (!recursive) yield break;
+
+        foreach (var subdirectoryPath in Directory.EnumerateDirectories(fullDirectoryPath))
+        {
+            var directoryName = Path.GetFileName(subdirectoryPath);
+            if (s_excludedDirectories.Contains(directoryName)) continue;
+
+            foreach (var filePath in EnumerateSupportedFilesCore(subdirectoryPath, recursive: true)) yield return filePath;
+        }
     }
 
     private static (string Content, Encoding Encoding) ReadFile(string fullPath)
